@@ -1,0 +1,412 @@
+{
+  "info": {
+    "name": "FIT4110 Lab04 Access Gate Docker Verification",
+    "description": "Postman collection (team-gate) verifying the Dockerized Access Gate service against the Lab 03 OpenAPI contract. Uses {{baseUrl}} and {{authToken}} from the environment - no hardcoded values.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01_Functional",
+      "item": [
+        {
+          "name": "GET health returns 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Health reports status ok with service and time', function () { const j = pm.response.json(); pm.expect(j.status).to.eql('ok'); pm.expect(j).to.have.property('service'); pm.expect(j).to.have.property('time'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET recent access logs returns a page",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/access/logs/recent?limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["access", "logs", "recent"],
+              "query": [{ "key": "limit", "value": "5" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response is a paginated access-log page', function () { const j = pm.response.json(); pm.expect(j).to.have.property('items'); pm.expect(j.items).to.be.an('array'); pm.expect(j).to.have.property('hasMore'); pm.expect(j).to.have.property('nextCursor'); });",
+                  "pm.test('Each access log has the contract fields', function () { const j = pm.response.json(); j.items.forEach(function (it) { pm.expect(it).to.have.property('logId'); pm.expect(it).to.have.property('cardId'); pm.expect(it).to.have.property('gateId'); pm.expect(it.direction).to.be.oneOf(['IN','OUT']); pm.expect(it.status).to.be.oneOf(['ALLOWED','DENIED']); }); });",
+                  "const first = pm.response.json().items[0];",
+                  "if (first && first.logId) { pm.environment.set('savedLogId', first.logId); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET access log by saved logId returns 200",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/access/logs/{{savedLogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["access", "logs", "{{savedLogId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Returned log matches saved logId', function () { const j = pm.response.json(); pm.expect(j.logId).to.eql(pm.environment.get('savedLogId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET card info returns 200 with enums",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/cards/RFID-2026-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["cards", "RFID-2026-001"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Card info matches contract enums', function () { const j = pm.response.json(); pm.expect(j.cardId).to.eql('RFID-2026-001'); pm.expect(j.holderType).to.be.oneOf(['STUDENT','LECTURER','STAFF','VISITOR']); pm.expect(j.status).to.be.oneOf(['ACTIVE','SUSPENDED','EXPIRED','REVOKED']); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET gate status returns 200",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/gates/GATE-01/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["gates", "GATE-01", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Gate status has valid mode and online flag', function () { const j = pm.response.json(); pm.expect(j.gateId).to.eql('GATE-01'); pm.expect(j.mode).to.be.oneOf(['NORMAL','LOCKDOWN','MAINTENANCE','EMERGENCY_OPEN']); pm.expect(j.isOnline).to.be.a('boolean'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST event GATE_SCAN returns 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"GATE_SCAN\",\n  \"gateId\": \"GATE-01\",\n  \"cardId\": \"RFID-2026-001\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Response returns an eventId', function () { const j = pm.response.json(); pm.expect(j).to.have.property('eventId'); pm.expect(j.eventId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02_Auth",
+      "item": [
+        {
+          "name": "GET recent logs without token returns 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/access/logs/recent",
+              "host": ["{{baseUrl}}"],
+              "path": ["access", "logs", "recent"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing token returns 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('Error body follows Problem shape', function () { const j = pm.response.json(); pm.expect(j).to.have.property('title'); pm.expect(j.status).to.eql(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET card with invalid token returns 401",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer totally-wrong-token" }],
+            "url": {
+              "raw": "{{baseUrl}}/cards/RFID-2026-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["cards", "RFID-2026-001"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Invalid token returns 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('Error body follows Problem shape', function () { const j = pm.response.json(); pm.expect(j).to.have.property('title'); pm.expect(j.status).to.eql(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST event without token returns 401",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"GATE_SCAN\",\n  \"gateId\": \"GATE-01\",\n  \"cardId\": \"RFID-2026-001\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing token returns 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03_Negative",
+      "item": [
+        {
+          "name": "GET gate with invalid gateId returns client error",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/gates/BADID/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["gates", "BADID", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Invalid gateId returns 4xx', function () { pm.expect(pm.response.code).to.be.within(400, 499); });",
+                  "pm.test('Error response has title and status', function () { const j = pm.response.json(); pm.expect(j).to.have.property('title'); pm.expect(j).to.have.property('status'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET unknown card returns 404",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/cards/RFID-9999-999",
+              "host": ["{{baseUrl}}"],
+              "path": ["cards", "RFID-9999-999"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Unknown card returns 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('404 body follows Problem shape', function () { const j = pm.response.json(); pm.expect(j.status).to.eql(404); pm.expect(j).to.have.property('title'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST event with invalid payload returns client error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"GATE_SCAN\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Invalid payload returns 4xx', function () { pm.expect(pm.response.code).to.be.within(400, 499); });",
+                  "pm.test('Error response follows Problem shape', function () { const j = pm.response.json(); pm.expect(j).to.have.property('title'); pm.expect(j).to.have.property('status'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04_Boundary_Reliability",
+      "item": [
+        {
+          "name": "GET recent logs with limit=100 (max) returns 200",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/access/logs/recent?limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["access", "logs", "recent"],
+              "query": [{ "key": "limit", "value": "100" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Boundary limit=100 returns 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response is still a valid page', function () { const j = pm.response.json(); pm.expect(j.items).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET recent logs with limit=101 (above max) returns 4xx",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/access/logs/recent?limit=101",
+              "host": ["{{baseUrl}}"],
+              "path": ["access", "logs", "recent"],
+              "query": [{ "key": "limit", "value": "101" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('limit above max returns 4xx', function () { pm.expect(pm.response.code).to.be.within(400, 499); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET recent logs - access status enum reliability",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/access/logs/recent",
+              "host": ["{{baseUrl}}"],
+              "path": ["access", "logs", "recent"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Every log status is ALLOWED or DENIED', function () { const j = pm.response.json(); j.items.forEach(function (it) { pm.expect(it.status).to.be.oneOf(['ALLOWED','DENIED']); }); });",
+                  "pm.test('Response time is acceptable (< 1500ms)', function () { pm.expect(pm.response.responseTime).to.be.below(1500); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

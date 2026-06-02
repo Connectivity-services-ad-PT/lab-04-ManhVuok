@@ -1,0 +1,13 @@
+extends:
+  - spectral:oas
+
+rules:
+  operation-description: warn
+  operation-operationId: error
+  operation-tags: warn
+  oas3-api-servers: off
+  # Tat rule nay vi loi cua engine JSONPath (nimma) trong spectral-cli 6.16.0:
+  # recursive-descent gap gia tri `null` (vd cac field nullable nhu operatorNote/nextCursor
+  # trong OpenAPI 3.1) gay crash "Cannot read properties of null (reading 'enum')".
+  # Day la bug cong cu, khong phai loi contract; cac rule kiem tra enum khac van bat.
+  duplicated-entry-in-enum: off
