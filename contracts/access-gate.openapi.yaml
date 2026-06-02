@@ -1,0 +1,590 @@
+openapi: 3.1.0
+info:
+  title: Smart Campus — Access Gate API Contract
+  version: 1.0.0
+  description: |
+    Hợp đồng API (OpenAPI 3.1) cho cặp Pair 03: Core Business (Consumer) ↔ Access Gate (Provider).
+    Access Gate cung cấp dữ liệu log quẹt thẻ, trạng thái cổng và thông tin thẻ cho Core Business.
+  contact:
+    name: FIT4110 Teaching Team
+    email: fit4110@example.edu.vn
+servers:
+  - url: http://localhost:4010
+    description: Prism mock server
+  - url: https://api.campus.local
+    description: Class network placeholder
+tags:
+  - name: health
+    description: Kiểm tra trạng thái service
+  - name: access-logs
+    description: Quản lý log quẹt thẻ ra/vào
+  - name: gates
+    description: Quản lý trạng thái cổng
+  - name: cards
+    description: Quản lý thông tin thẻ RFID
+  - name: events
+    description: Quản lý sự kiện nghiệp vụ
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Kiểm tra trạng thái service
+      description: Endpoint kiểm tra service còn hoạt động.
+      tags: [health]
+      security: []
+      responses:
+        '200':
+          description: Service đang hoạt động
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: ok
+                service: access-gate
+                time: '2026-05-26T08:00:00Z'
+
+  /access/logs/recent:
+    get:
+      operationId: getRecentAccessLogs
+      summary: Lấy danh sách log quẹt thẻ gần đây
+      description: |
+        Core Business gọi endpoint này để lấy danh sách log quẹt thẻ gần nhất.
+        Hỗ trợ cursor-based pagination.
+      tags: [access-logs]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Danh sách log quẹt thẻ gần đây
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessLogPage'
+              example:
+                items:
+                  - logId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+                    cardId: RFID-2026-001
+                    gateId: GATE-01
+                    direction: IN
+                    status: ALLOWED
+                    timestamp: '2026-05-26T07:30:00Z'
+                    operatorNote: null
+                  - logId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babd
+                    cardId: RFID-2026-002
+                    gateId: GATE-02
+                    direction: OUT
+                    status: DENIED
+                    timestamp: '2026-05-26T07:35:00Z'
+                    operatorNote: Thẻ hết hạn
+                nextCursor: null
+                hasMore: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /access/logs/{logId}:
+    get:
+      operationId: getAccessLogById
+      summary: Lấy chi tiết một log quẹt thẻ
+      description: Core Business lấy chi tiết log quẹt thẻ theo UUID để kiểm tra/audit.
+      tags: [access-logs]
+      parameters:
+        - $ref: '#/components/parameters/LogId'
+      responses:
+        '200':
+          description: Chi tiết log quẹt thẻ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessLog'
+              example:
+                logId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+                cardId: RFID-2026-001
+                gateId: GATE-01
+                direction: IN
+                status: ALLOWED
+                timestamp: '2026-05-26T07:30:00Z'
+                operatorNote: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /gates/{gateId}/status:
+    get:
+      operationId: getGateStatus
+      summary: Lấy trạng thái cổng
+      description: Core Business kiểm tra trạng thái hoạt động của cổng theo mã cổng.
+      tags: [gates]
+      parameters:
+        - $ref: '#/components/parameters/GateId'
+      responses:
+        '200':
+          description: Trạng thái cổng hiện tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GateStatus'
+              example:
+                gateId: GATE-01
+                gateName: Cổng chính A
+                mode: NORMAL
+                isOnline: true
+                lastHeartbeat: '2026-05-26T08:00:00Z'
+                errorMessage: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /cards/{cardId}:
+    get:
+      operationId: getCardInfo
+      summary: Lấy thông tin thẻ RFID
+      description: Core Business tra cứu thông tin thẻ theo mã thẻ RFID để kiểm tra quyền truy cập.
+      tags: [cards]
+      parameters:
+        - $ref: '#/components/parameters/CardId'
+      responses:
+        '200':
+          description: Thông tin thẻ RFID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardInfo'
+              example:
+                cardId: RFID-2026-001
+                holderName: Nguyen Van A
+                holderType: STUDENT
+                status: ACTIVE
+                issuedAt: '2026-01-15T00:00:00Z'
+                expiresAt: '2027-01-15T00:00:00Z'
+                suspendedReason: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events:
+    post:
+      operationId: createAccessEvent
+      summary: Gửi sự kiện nghiệp vụ
+      description: Polymorphic event (GateEvent / CardEvent).
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampusEvent'
+            example:
+              eventType: GATE_SCAN
+              gateId: GATE-01
+              cardId: RFID-2026-001
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+webhooks:
+  accessDenied:
+    post:
+      operationId: onAccessDenied
+      summary: Webhook DENIED
+      description: Webhook khi quet the bi tu choi.
+      tags: [access-logs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessLog'
+      responses:
+        '200':
+          description: OK
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    LogId:
+      name: logId
+      in: path
+      required: true
+      description: UUID của log quẹt thẻ.
+      schema:
+        type: string
+    GateId:
+      name: gateId
+      in: path
+      required: true
+      description: Mã cổng, theo định dạng GATE-XX.
+      schema:
+        type: string
+        pattern: '^GATE-[0-9]{2}$'
+    CardId:
+      name: cardId
+      in: path
+      required: true
+      description: Mã thẻ RFID, theo định dạng RFID-YYYY-NNN.
+      schema:
+        type: string
+        pattern: '^RFID-[0-9]{4}-[0-9]{3}$'
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: |
+        Cursor dùng để lấy trang tiếp theo (giá trị từ `nextCursor` của response trước).
+        Không gửi tham số này khi lấy trang đầu.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Số item tối đa mỗi trang.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    HealthStatus:
+      type: object
+      additionalProperties: false
+      required: [status, service, time]
+      properties:
+        status:
+          type: string
+          description: Trạng thái service (giá trị cố định `ok`).
+          example: ok
+        service:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: Tên service.
+          example: access-gate
+        time:
+          type: string
+          format: date-time
+          description: Thời điểm kiểm tra.
+          example: '2026-05-26T08:00:00Z'
+
+    AccessLog:
+      type: object
+      additionalProperties: false
+      required: [logId, cardId, gateId, direction, status, timestamp, operatorNote]
+      properties:
+        logId:
+          type: string
+          description: UUID của log quẹt thẻ.
+          example: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+        cardId:
+          type: string
+          pattern: '^RFID-[0-9]{4}-[0-9]{3}$'
+          description: Mã thẻ RFID.
+          example: RFID-2026-001
+        gateId:
+          type: string
+          pattern: '^GATE-[0-9]{2}$'
+          description: Mã cổng.
+          example: GATE-01
+        direction:
+          type: string
+          enum: [IN, OUT]
+          description: Hướng ra/vào cổng.
+          example: IN
+        status:
+          type: string
+          enum: [ALLOWED, DENIED]
+          description: Kết quả quẹt thẻ.
+          example: ALLOWED
+        timestamp:
+          type: string
+          format: date-time
+          description: Thời điểm quẹt thẻ.
+          example: '2026-05-26T07:30:00Z'
+        operatorNote:
+          type: [string, 'null']
+          maxLength: 500
+          description: Ghi chú của nhân viên vận hành, null nếu không có.
+          example: null
+
+    AccessLogPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor, hasMore]
+      properties:
+        items:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/AccessLog'
+        nextCursor:
+          type: [string, 'null']
+          description: Cursor trang tiếp theo, null nếu hết dữ liệu.
+          example: null
+        hasMore:
+          type: boolean
+          description: Còn dữ liệu ở trang sau hay không.
+          example: false
+
+    GateStatus:
+      type: object
+      additionalProperties: false
+      required: [gateId, gateName, mode, isOnline, lastHeartbeat, errorMessage]
+      properties:
+        gateId:
+          type: string
+          pattern: '^GATE-[0-9]{2}$'
+          description: Mã cổng.
+          example: GATE-01
+        gateName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Tên hiển thị của cổng.
+          example: Cổng chính A
+        mode:
+          type: string
+          enum: [NORMAL, LOCKDOWN, MAINTENANCE, EMERGENCY_OPEN]
+          description: Chế độ hoạt động của cổng.
+          example: NORMAL
+        isOnline:
+          type: boolean
+          description: Cổng có đang online không.
+          example: true
+        lastHeartbeat:
+          type: string
+          format: date-time
+          description: Thời điểm heartbeat cuối cùng.
+          example: '2026-05-26T08:00:00Z'
+        errorMessage:
+          type: [string, 'null']
+          maxLength: 300
+          description: Thông báo lỗi nếu có, null nếu bình thường.
+          example: null
+
+    CardInfo:
+      type: object
+      additionalProperties: false
+      required: [cardId, holderName, holderType, status, issuedAt, expiresAt, suspendedReason]
+      properties:
+        cardId:
+          type: string
+          pattern: '^RFID-[0-9]{4}-[0-9]{3}$'
+          description: Mã thẻ RFID.
+          example: RFID-2026-001
+        holderName:
+          type: string
+          minLength: 2
+          maxLength: 120
+          description: Tên chủ thẻ.
+          example: Nguyen Van A
+        holderType:
+          type: string
+          enum: [STUDENT, LECTURER, STAFF, VISITOR]
+          description: Loại chủ thẻ.
+          example: STUDENT
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, EXPIRED, REVOKED]
+          description: Trạng thái thẻ.
+          example: ACTIVE
+        issuedAt:
+          type: string
+          format: date-time
+          description: Ngày phát hành thẻ.
+          example: '2026-01-15T00:00:00Z'
+        expiresAt:
+          type: string
+          format: date-time
+          description: Ngày hết hạn thẻ.
+          example: '2027-01-15T00:00:00Z'
+        suspendedReason:
+          type: [string, 'null']
+          maxLength: 300
+          description: Lý do tạm khóa thẻ, null nếu thẻ không bị khóa.
+          example: null
+
+    CampusEvent:
+      oneOf:
+        - $ref: '#/components/schemas/GateEvent'
+        - $ref: '#/components/schemas/CardEvent'
+      discriminator:
+        propertyName: eventType
+        mapping:
+          GATE_SCAN: '#/components/schemas/GateEvent'
+          CARD_STATUS_CHANGE: '#/components/schemas/CardEvent'
+
+    GateEvent:
+      type: object
+      additionalProperties: false
+      required: [eventType, gateId, cardId]
+      properties:
+        eventType:
+          type: string
+          enum: [GATE_SCAN]
+        gateId:
+          type: string
+        cardId:
+          type: string
+
+    CardEvent:
+      type: object
+      additionalProperties: false
+      required: [eventType, cardId, newStatus]
+      properties:
+        eventType:
+          type: string
+          enum: [CARD_STATUS_CHANGE]
+        cardId:
+          type: string
+        newStatus:
+          type: string
+
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          description: URI định danh loại lỗi.
+          example: https://campus.local/errors/validation
+        title:
+          type: string
+          minLength: 3
+          maxLength: 120
+          description: Tiêu đề lỗi ngắn gọn.
+          example: Dữ liệu không hợp lệ
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          description: HTTP status code.
+          example: 400
+        detail:
+          type: string
+          maxLength: 500
+          description: Mô tả chi tiết lỗi.
+          example: Field cardId không đúng định dạng
+        instance:
+          type: string
+          description: URI của request gây lỗi.
+          example: /access/logs/recent
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Dữ liệu sai định dạng
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://campus.local/errors/validation
+            title: Dữ liệu không hợp lệ
+            status: 400
+            detail: Payload không đúng JSON Schema
+            instance: /events
+            errors:
+              - field: cardId
+                code: PATTERN_MISMATCH
+                message: cardId phải có dạng RFID-YYYY-NNN
+
+    Unauthorized:
+      description: Thiếu hoặc sai thông tin xác thực
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://campus.local/errors/unauthorized
+            title: Chưa xác thực
+            status: 401
+            detail: Thiếu Bearer token
+            instance: /access/logs/recent
+            errors: []
+
+    Forbidden:
+      description: Không có quyền thực hiện thao tác
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    NotFound:
+      description: Resource không tồn tại
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://campus.local/errors/not-found
+            title: Không tìm thấy
+            status: 404
+            detail: Log quẹt thẻ không tồn tại
+            instance: /access/logs/00000000-0000-4000-8000-000000000099
+            errors: []
+
+    Conflict:
+      description: Xung đột nghiệp vụ hoặc trùng idempotency key
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    UnprocessableEntity:
+      description: Payload đúng định dạng nhưng không hợp lệ về nghiệp vụ
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    InternalServerError:
+      description: Lỗi không mong muốn phía server
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

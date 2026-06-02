@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="FIT4110 Lab04 Access Gate Docker Verification" tests="15" time="0.063">
+  <testsuite name="01_Functional / GET health returns 200" id="e27f2b91-019a-4113-a18e-edfde0733e06" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.023">
+    <testcase name="Status code is 200" time="0.023" classname="01FunctionalGetHealthReturns200"/>
+    <testcase name="Health reports status ok with service and time" time="0.023" classname="01FunctionalGetHealthReturns200"/>
+  </testsuite>
+  <testsuite name="01_Functional / GET recent access logs returns a page" id="f97bd5d3-9efa-4671-a313-616a5421a214" timestamp="2026-06-02T03:24:19.535Z" tests="3" failures="0" errors="0" time="0.005">
+    <testcase name="Status code is 200" time="0.005" classname="01FunctionalGetRecentAccessLogsReturnsAPage"/>
+    <testcase name="Response is a paginated access-log page" time="0.005" classname="01FunctionalGetRecentAccessLogsReturnsAPage"/>
+    <testcase name="Each access log has the contract fields" time="0.005" classname="01FunctionalGetRecentAccessLogsReturnsAPage"/>
+  </testsuite>
+  <testsuite name="01_Functional / GET access log by saved logId returns 200" id="daa7dabe-6ea0-4683-a00c-cd34de5e7942" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.004">
+    <testcase name="Status code is 200" time="0.004" classname="01FunctionalGetAccessLogBySavedLogIdReturns200"/>
+    <testcase name="Returned log matches saved logId" time="0.004" classname="01FunctionalGetAccessLogBySavedLogIdReturns200"/>
+  </testsuite>
+  <testsuite name="01_Functional / GET card info returns 200 with enums" id="e3cc1f97-32ef-4db8-a367-b1d47bdc5b9a" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Status code is 200" time="0.003" classname="01FunctionalGetCardInfoReturns200WithEnums"/>
+    <testcase name="Card info matches contract enums" time="0.003" classname="01FunctionalGetCardInfoReturns200WithEnums"/>
+  </testsuite>
+  <testsuite name="01_Functional / GET gate status returns 200" id="2cf6a246-1b2d-410d-acdc-2fc2a32d534f" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Status code is 200" time="0.003" classname="01FunctionalGetGateStatusReturns200"/>
+    <testcase name="Gate status has valid mode and online flag" time="0.003" classname="01FunctionalGetGateStatusReturns200"/>
+  </testsuite>
+  <testsuite name="01_Functional / POST event GATE_SCAN returns 201" id="56d72326-51a2-4091-bf60-74fad5138c76" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Status code is 201" time="0.003" classname="01FunctionalPostEventGateScanReturns201"/>
+    <testcase name="Response returns an eventId" time="0.003" classname="01FunctionalPostEventGateScanReturns201"/>
+  </testsuite>
+  <testsuite name="02_Auth / GET recent logs without token returns 401" id="d0e65553-ccf9-4f50-aac5-b333cc778e2d" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Missing token returns 401" time="0.003" classname="02AuthGetRecentLogsWithoutTokenReturns401"/>
+    <testcase name="Error body follows Problem shape" time="0.003" classname="02AuthGetRecentLogsWithoutTokenReturns401"/>
+  </testsuite>
+  <testsuite name="02_Auth / GET card with invalid token returns 401" id="6ed551d9-0e8d-4577-881d-af1793ec1fec" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.002">
+    <testcase name="Invalid token returns 401" time="0.002" classname="02AuthGetCardWithInvalidTokenReturns401"/>
+    <testcase name="Error body follows Problem shape" time="0.002" classname="02AuthGetCardWithInvalidTokenReturns401"/>
+  </testsuite>
+  <testsuite name="02_Auth / POST event without token returns 401" id="338de8b4-0583-4914-a012-1226544d3752" timestamp="2026-06-02T03:24:19.535Z" tests="1" failures="0" errors="0" time="0.004">
+    <testcase name="Missing token returns 401" time="0.004" classname="02AuthPostEventWithoutTokenReturns401"/>
+  </testsuite>
+  <testsuite name="03_Negative / GET gate with invalid gateId returns client error" id="d9c489bb-bfbf-43a6-972e-54f031a298ac" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Invalid gateId returns 4xx" time="0.003" classname="03NegativeGetGateWithInvalidGateIdReturnsClientError"/>
+    <testcase name="Error response has title and status" time="0.003" classname="03NegativeGetGateWithInvalidGateIdReturnsClientError"/>
+  </testsuite>
+  <testsuite name="03_Negative / GET unknown card returns 404" id="cb013f13-94c5-4db8-a39d-c32bf7fe4d98" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.002">
+    <testcase name="Unknown card returns 404" time="0.002" classname="03NegativeGetUnknownCardReturns404"/>
+    <testcase name="404 body follows Problem shape" time="0.002" classname="03NegativeGetUnknownCardReturns404"/>
+  </testsuite>
+  <testsuite name="03_Negative / POST event with invalid payload returns client error" id="bddcaaa4-3c85-411d-b7de-7856f34438b5" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.002">
+    <testcase name="Invalid payload returns 4xx" time="0.002" classname="03NegativePostEventWithInvalidPayloadReturnsClientError"/>
+    <testcase name="Error response follows Problem shape" time="0.002" classname="03NegativePostEventWithInvalidPayloadReturnsClientError"/>
+  </testsuite>
+  <testsuite name="04_Boundary_Reliability / GET recent logs with limit=100 (max) returns 200" id="2ddb46af-a5fc-4760-83ed-a737ccb65250" timestamp="2026-06-02T03:24:19.535Z" tests="2" failures="0" errors="0" time="0.002">
+    <testcase name="Boundary limit=100 returns 200" time="0.002" classname="04BoundaryReliabilityGetRecentLogsWithLimit100MaxReturns200"/>
+    <testcase name="Response is still a valid page" time="0.002" classname="04BoundaryReliabilityGetRecentLogsWithLimit100MaxReturns200"/>
+  </testsuite>
+  <testsuite name="04_Boundary_Reliability / GET recent logs with limit=101 (above max) returns 4xx" id="bcb948e9-cb3f-49ef-b94b-943d15722d95" timestamp="2026-06-02T03:24:19.535Z" tests="1" failures="0" errors="0" time="0.002">
+    <testcase name="limit above max returns 4xx" time="0.002" classname="04BoundaryReliabilityGetRecentLogsWithLimit101AboveMaxReturns4Xx"/>
+  </testsuite>
+  <testsuite name="04_Boundary_Reliability / GET recent logs - access status enum reliability" id="fa3ffaf2-3d97-4e19-aa53-f7cf59b9e3b1" timestamp="2026-06-02T03:24:19.535Z" tests="3" failures="0" errors="0" time="0.002">
+    <testcase name="Status code is 200" time="0.002" classname="04BoundaryReliabilityGetRecentLogsAccessStatusEnumReliability"/>
+    <testcase name="Every log status is ALLOWED or DENIED" time="0.002" classname="04BoundaryReliabilityGetRecentLogsAccessStatusEnumReliability"/>
+    <testcase name="Response time is acceptable (&lt; 1500ms)" time="0.002" classname="04BoundaryReliabilityGetRecentLogsAccessStatusEnumReliability"/>
+  </testsuite>
+</testsuites>
